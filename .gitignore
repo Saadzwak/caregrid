@@ -40,3 +40,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# submission artifacts kept local (deck added as PDF in the form)
+DEMO_SCRIPT.md
+PITCH_DECK.md

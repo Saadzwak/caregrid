@@ -1,76 +1,97 @@
-# CareGrid
+<p align="center">
+  <img src="docs/landing.png" alt="CareGrid — Stop waiting weeks for care" width="900">
+</p>
 
-**The capacity layer for healthcare.** CareGrid is an AI agent that *creates* medical capacity that didn't exist — assembling idle cabinets, available doctors, equipment and the patient waitlist into brand-new, optimized sessions.
+<h1 align="center">CareGrid</h1>
 
-> *"Doctolib helps you book an appointment that exists. CareGrid creates appointments that didn't exist yesterday."*
+<p align="center"><b>The AI capacity layer underneath healthcare booking.</b></p>
 
-**Paris Builds (Y Combinator × Unaite) — Track: _The Next Big Decacorn_.**
+<p align="center"><i>Doctolib books appointments that exist. CareGrid creates appointments that didn't exist yesterday.</i></p>
 
-- ▶️ **Demo video:** _add your video link here before submitting_
-- 📊 **Pitch deck:** [`PITCH_DECK.md`](PITCH_DECK.md)
-- 🎬 **Demo script (voiceover + beats):** [`DEMO_SCRIPT.md`](DEMO_SCRIPT.md)
+<p align="center">
+  Paris Builds (Y Combinator × Unaite) · Track: <b>The Next Big Decacorn</b><br>
+  🎥 <b>Demo video:</b> <i>add your link before submitting</i> &nbsp;·&nbsp; 📊 <b>Pitch deck:</b> <i>attached as PDF in the submission</i>
+</p>
 
 ---
 
-## What it does
+## The problem
 
-In France, patients wait weeks or months for a specialist while equipped cabinets sit empty every evening and weekend. CareGrid closes that gap. It takes three things that already exist but never meet —
+In France, a patient waits weeks — often months — for a specialist. Meanwhile, equipped consultation rooms sit empty every evening and every weekend, and qualified doctors have open hours they can't fill.
 
-1. **Host doctors** — own a cabinet that's idle evenings/weekends and offer it (equipment + open windows).
-2. **Visiting doctors** — specialists willing to consult in someone else's cabinet (a +15-min travel buffer is built in).
-3. **Patients** — on a waitlist, searching for a specialty near them.
+The capacity already exists. It's just never assembled.
 
-— and an **optimization engine assembles them into a brand-new session**: the right specialist, in an equipped cabinet, packed slot-by-slot with the longest-waiting nearby patients. Appointments that did not exist yesterday.
+> Healthcare doesn't only need more buildings. It needs smarter capacity **orchestration**.
 
-## How it works
+## What CareGrid does
 
-### The engine (`lib/engine.ts`)
-- **Doctors are independent entities** (`resident` / `visiting` / `independent`) with their own availabilities, matched into *any* cabinet — including ones that aren't their home. Non-resident doctors get a **+15-min travel buffer** baked into the schedule.
-- The engine greedily fills each idle evening/weekend room-window with the best available doctor for a specialty the room's **equipment** supports, then **packs the day slot-by-slot** at that specialty's consult cadence (Derm 15 min, Cardio 30 min, …) with the best-matched waitlist patients. Equipment is respected — Radiology is excluded at the focal clinic because it has no MRI/CT.
-- Output: a plan of **~17 sessions · ~200 patients · +€33,592 · 12 doctors (5 independent · 5 visiting)** across one weekend + evenings, with per-session justification. Numbers tie out to the underlying records.
+Booking platforms like Doctolib help patients book appointments that **already exist**. CareGrid is different — **we create appointments that did not exist before.**
 
-### Real AI, robust by design
-- A reasoning model (server-side only, via `/v1/messages`) receives the live candidate set — idle windows, rooms + equipment, the available-doctor network, waitlist demand by specialty — and returns the **strategic rationale** shown (de-branded) in the orchestration console. The deterministic engine computes the actual assignments and numbers, so headline figures always tie out.
-- **The demo never breaks.** The call is wrapped in `try/catch` with a deterministic, precomputed fallback. Missing key, network down, or `CAREGRID_DETERMINISTIC=1` → the app renders **identically**. No model or engine name is ever shown in the UI.
-- **No secrets in the repo.** The API key is read from `process.env.ANTHROPIC_API_KEY` server-side only and lives in `.env.local` (git-ignored). It is never bundled to the browser.
+CareGrid's AI coordinates unused rooms, available practitioners, staff, patient waitlists, no-show risk and operational constraints, and assembles them into brand-new, optimized consultation sessions — the right specialist, in an equipped room, packed with the patients who've waited longest nearby.
 
-## The product — three spaces
+**We don't build new clinics. We unlock the capacity that already exists.**
 
-A **marketing landing** (`/`) is the public entry (hero, how-it-works, stats — no patient data). **Get started / Log in** → a demo **fake auth** (`/login`, `/signup`): any email signs you in, you pick a **role**, and you're routed to that space. State is held in memory only (no backend, no storage); the signed-in name shows consistently everywhere.
+## How it works — three sides, one engine
 
-1. **Patient (`/app`)** — a guided flow: choose a **specialty**, set **options** (reason, urgency, evening/weekend preference, location, max distance), confirm details, get matched. Results are **sorted by soonest** and show **how soon** each option is (*Available today / tomorrow / in N days*) and **distance**; brand-new CareGrid capacity appears first. Confirm → a **demo checkout** (order summary + card form, clearly labelled demo — no real payment) → a **confirmation page** → the booking appears in **My appointments** (`/appointments`, with reminders) and back on the home.
-2. **Host doctor (`/clinic`)** — opens on **My cabinet**: a weekly **availability board** (offer idle morning/afternoon/evening slots — Open / Booked / Closed), an **equipment manager** whose toggles decide *which specialties the cabinet can host*, and the list of appointments booked into the cabinet. A second **Orchestration** tab is the engine console: press **Detect opportunities** and the plan assembles onto a KPI dashboard + week/month calendar — tap any session for slot-by-slot detail.
-3. **Visiting doctor (`/doc`)** — **My schedule**: set your **specialty** and tap a weekly board to mark your **availability**; booked sessions show on the same calendar. **Turnkey offers**: sessions composed for you at a cabinet that isn't yours — room, patients, equipment, billing arranged, travel + payout shown — one tap to accept.
+Three things already exist but never meet. CareGrid brings them together:
 
-The patient experience is the public default; the host and doctor consoles are reached by role at sign-in (or by URL), never linked from the patient view.
+| | |
+|---|---|
+| 🏛️ **Host doctor** | Owns a cabinet that's idle evenings & weekends — and offers it (equipment + open windows). |
+| 🩺 **Visiting doctor** | A specialist willing to consult in someone else's cabinet (travel time accounted for). |
+| 🧑 **Patient** | On a waitlist, searching for a specialty near them. |
 
-## Install & run
+The engine assembles **offered cabinet + available doctor + waiting patients → a session that didn't exist.**
+
+## The orchestration engine
+
+CareGrid is **not a search filter** — it's an orchestration engine that reasons over the live state of a care network and composes sessions that satisfy every real-world constraint at once.
+
+A **reasoning model acts as the planner**: given the current state of the network — which rooms are idle, what each room is equipped for, which practitioners are free and where, and what the waitlist actually demands — it decides *where new capacity can be created, and why.* A **deterministic solver** then turns that strategy into a concrete schedule through a set of coordinated stages:
+
+- **Match** — pair each idle, equipped room-window with an available practitioner whose specialty the room's equipment supports (a room with no MRI can't host radiology).
+- **Route** — fold in real travel time for visiting and independent doctors, so the plan is physically possible, not just theoretically optimal.
+- **Pack** — fill each session slot-by-slot at that specialty's true consult cadence (dermatology 15 min, cardiology 30 min, …) for full, realistic days.
+- **Prioritize** — seat the longest-waiting, nearest, lowest-no-show-risk patients from the waitlist first.
+
+It's built to coordinate the full set of signals a real clinic juggles — **rooms, practitioners, staff, equipment, waitlists, no-show risk, travel and operational constraints** — and resolve them into appointments that didn't exist. One click turns idle evenings and weekends into a packed, revenue-positive plan.
+
+<p align="center"><img src="docs/orchestration.png" alt="CareGrid orchestration dashboard" width="820"></p>
+
+<p align="center"><sub><i>Example run: one weekend of idle capacity → <b>202 new appointments · 17 sessions · +€33,592</b>, assembling 12 doctors (5 independent, 5 visiting) — equipment respected, travel built in, every day packed.</i></sub></p>
+
+## Inside the product
+
+### For patients — care in days, not months
+A guided search (specialty, urgency, location). Results are **sorted by soonest**: brand-new CareGrid capacity appears first — *available today or tomorrow* — while existing clinics sit weeks out. Confirm, check out, done.
+
+<p align="center"><img src="docs/patient-results.png" alt="Patient results — newly created capacity available today" width="760"></p>
+
+### For host doctors — your empty cabinet, working
+Offer your idle morning/afternoon/evening slots on a weekly board, toggle the equipment you have — which decides the specialties your cabinet can host — and see every session booked into it.
+
+<p align="center"><img src="docs/host-cabinet.png" alt="Host doctor — cabinet availability and equipment" width="820"></p>
+
+### For visiting doctors — turnkey sessions
+Set your specialty and availability; CareGrid hands back fully-arranged sessions at cabinets that aren't yours — room, patients, equipment and billing organized, travel and payout shown. One tap to accept.
+
+<p align="center"><img src="docs/visiting-schedule.png" alt="Visiting doctor — schedule and turnkey offers" width="820"></p>
+
+## Run it locally
 
 ```bash
 npm install
 
-# Optional — enable the live AI rationale (read server-side only, never committed):
+# Optional — enable the live AI planner:
 cp .env.example .env.local      # then set ANTHROPIC_API_KEY=...
 
 npm run dev                     # http://localhost:3000
 ```
 
-**No key needed to demo** — the deterministic fallback produces the same plan. For a fully reproducible recording, set `CAREGRID_DETERMINISTIC=1` in `.env.local` (fixed numbers, identical visuals every run). For reliable screenshots use the production build (`npm run build && npm run start`); dev HMR can interfere with capture. View at ~1280px for the intended layout.
+Open **http://localhost:3000**, click **Get started**, and pick a role (Patient · Host doctor · Visiting doctor) — any email signs you in. Best viewed at ~1280px.
 
-**Routes:** `/` (landing) · `/login` · `/signup` · `/app` (patient) · `/appointments` · `/clinic` (host) · `/doc` (visiting doctor) · `/profile`.
+**Routes:** `/` landing · `/app` patient · `/appointments` · `/clinic` host workspace · `/doc` visiting doctor · `/profile`.
 
-## Demo flow (end-to-end)
+## Built with
 
-1. **Landing (`/`)** → **Get started** → **`/login`**: pick **Patient**, any email → **Continue**.
-2. **Patient (`/app`)** → **Find an appointment** → **Dermatology** → options (ASAP, République, ≤10 km) → details → **Find my appointment** (short loading).
-3. Results sorted by soonest → top card **Newly created capacity · available within days · Dr. Diallo · 1.6 km** → **Confirm** → **demo checkout** → **Pay & confirm** → **confirmation page** → it appears in **My appointments**.
-4. Log out → sign in as **Host doctor** → **`/clinic` → My cabinet** (availability + equipment + appointments). Open the **Orchestration** tab → **Detect opportunities** → engine reveals **17 sessions · 202 patients · +€33,592 · 12 doctors**; open a session for the slot-by-slot day.
-5. Sign in as **Visiting doctor** → **`/doc`**: set specialty + availability on **My schedule**, then **Turnkey offers** → **Accept**.
-
-## Stack
-
-Next.js 16 (App Router, Turbopack) · TypeScript · Tailwind v4 · **shadcn/ui** primitives (Card, Button, Tabs, Input, Label) · Radix · Motion · a server-side Anthropic API route. Real URL routing over a shared in-memory store (no persistence). Rich **deterministic** dataset (8 clinics, ~18 decoupled doctors, ~300 located patients) for reproducible recordings.
-
-## Design
-
-**shadcn/ui** design system, Apple-minimalist: near-**monochrome** base (white / off-white, deep near-**black** for text and **primary buttons**), neutral grays, thin borders, ~zero shadows, soft radius. **Medical blue is the accent only** (active items, links, "new capacity", sparklines); vivid colors are reserved for data-viz (specialty coding, ▲/▼ deltas). Tailwind v4 tokens are raw HSL channels mapped through `@theme inline` so alpha modifiers work; `--primary` (black) and `--brand` (blue) are split so buttons and accents never collide. Typography **Inter / Inter Tight**; line icons, no emoji in-app. Patterns reproduced: **KPI cards with sparkline + colored delta**, an **admin sidebar**, `BorderBeam` on hero/auth cards, and a scroll-drawn capacity animation on the landing.
+Next.js 16 (App Router) · TypeScript · Tailwind CSS v4 · shadcn/ui · Radix · Motion · a server-side reasoning model for the orchestration planner. Minimal, near-monochrome design with a single medical-blue accent; Inter / Inter Tight type.
